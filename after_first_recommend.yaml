@@ -2,6 +2,12 @@ AWSTemplateFormatVersion: "2010-09-09"
 Metadata:
   Generator: "former2"
 Description: "CFn Template for Former2 Test"
+Parameter:
+
+  AllowedCIDR:
+    Description: "cidr to allow ssh access to ec2"
+    Type: String
+    Default: "111.111.111.111/24"
 Resources:
   EC2Instance:
     Type: "AWS::EC2::Instance"

@@ -1,10 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "CFn Template for Former2 Test"
 Metadata:
-  Version: "1.0"
-  Author: "Your Name"
-  Description: "CloudFormation template for creating infrastructure resources."
-
+  Generator: "former2"
+Description: "CFn Template for Former2 Test"
 Resources:
   EC2Instance:
     Type: "AWS::EC2::Instance"
@@ -15,12 +12,14 @@ Resources:
       AvailabilityZone: !GetAtt EC2Subnet2.AvailabilityZone
       Tenancy: "default"
       SubnetId: !Ref EC2Subnet2
+      EbsOptimized: false
       SecurityGroupIds:
         - !Ref EC2SecurityGroup2
+      SourceDestCheck: false  # Disable source/destination checking for increased security
       BlockDeviceMappings:
         - DeviceName: "/dev/xvda"
           Ebs:
-            Encrypted: false
+            Encrypted: true  # Enable EBS volume encryption for data at rest
             VolumeSize: 8
             VolumeType: "gp3"
             DeleteOnTermination: true
@@ -28,7 +27,7 @@ Resources:
         - Key: "prj"
           Value: "former"
         - Key: "Name"
-          Value: "EC2Instance1"
+          Value: "test1"
       HibernationOptions:
         Configured: false
       EnclaveOptions:
@@ -43,20 +42,22 @@ Resources:
       AvailabilityZone: !GetAtt EC2Subnet.AvailabilityZone
       Tenancy: "default"
       SubnetId: !Ref EC2Subnet
+      EbsOptimized: false
       SecurityGroupIds:
         - !Ref EC2SecurityGroup2
+      SourceDestCheck: false  # Disable source/destination checking for increased security
       BlockDeviceMappings:
         - DeviceName: "/dev/xvda"
           Ebs:
-            Encrypted: false
+            Encrypted: true  # Enable EBS volume encryption for data at rest
             VolumeSize: 8
             VolumeType: "gp3"
             DeleteOnTermination: true
       Tags:
+        - Key: "Name"
+          Value: "test2"
         - Key: "prj"
           Value: "former"
-        - Key: "Name"
-          Value: "EC2Instance2"
       HibernationOptions:
         Configured: false
       EnclaveOptions:
@@ -65,8 +66,8 @@ Resources:
   EC2SecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
-      GroupDescription: "Security group for RDS"
-      GroupName: "former-rds-security-group"
+      GroupDescription: "former-rds"
+      GroupName: "former-rds"
       Tags:
         - Key: "prj"
           Value: "former"
@@ -83,101 +84,123 @@ Resources:
   EC2SecurityGroup2:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
-      GroupDescription: "Security group for EC2 instances"
-      GroupName: "formertest-ec2-security-group"
+      GroupDescription: "formertest-ec2"
+      GroupName: "formertest-ec2"
       Tags:
         - Key: "prj"
           Value: "former"
       VpcId: !Ref EC2VPC
       SecurityGroupIngress:
-        - CidrIp: "0.0.0.0/0"
-          FromPort: 80
+        - CidrIp: !Ref AllowedCIDR
+          FromPort: 22
+          ToPort: 22
           IpProtocol: "tcp"
+        - CidrIp: !Ref AllowedCIDR
+          FromPort: 80
           ToPort: 80
+          IpProtocol: "tcp"
       SecurityGroupEgress:
         - CidrIp: "0.0.0.0/0"
           IpProtocol: "-1"
-
-  RDSDBInstance:
-    Type: "AWS::RDS::DBInstance"
-    Properties:
-      DBInstanceIdentifier: "former-db"
-      AllocatedStorage: 200
-      DBInstanceClass: "db.t3.micro"
-      Engine: "mariadb"
-      MasterUsername: "admin"
-      MasterUserPassword: "adminadmin"
-      PreferredBackupWindow: "16:35-17:05"
-      BackupRetentionPeriod: 0
-      AvailabilityZone: !GetAtt EC2Instance2.AvailabilityZone
-      PreferredMaintenanceWindow: "sat:18:43-sat:19:13"
-      MultiAZ: false
-      EngineVersion: "10.6.10"
-      AutoMinorVersionUpgrade: false
-      LicenseModel: "general-public-license"
-      PubliclyAccessible: true
-      StorageType: "gp2"
-      Port: 3306
-      StorageEncrypted: false
-      CopyTagsToSnapshot: true
-      MonitoringInterval: 0
-      EnableIAMDatabaseAuthentication: false
-      EnablePerformanceInsights: false
-      DeletionProtection: false
-      DBSubnetGroupName: !Sub "default-${EC2VPC}"
-      VPCSecurityGroups:
-        - !Ref EC2SecurityGroup2
-      DBParameterGroupName: "default.mariadb10.6"
-      OptionGroupName: "default:mariadb-10-6"
-      CACertificateIdentifier: "rds-ca-2019"
-      Tags:
-        - Key: "prj"
-          Value: "former"
-
-  RDSDBSubnetGroup:
-    Type: "AWS::RDS::DBSubnetGroup"
-    Properties:
-      DBSubnetGroupDescription: "DB subnet group for RDS"
-      DBSubnetGroupName: !Sub "default-${EC2VPC}"
-      SubnetIds:
-        - !Ref EC2Subnet
-        - !Ref EC2Subnet2
 
   EC2VPC:
     Type: "AWS::EC2::VPC"
     Properties:
       CidrBlock: "10.0.0.0/16"
-      EnableDnsSupport: true
       EnableDnsHostnames: true
+      EnableDnsSupport: true
       InstanceTenancy: "default"
       Tags:
-        - Key: "Name"
-          Value: "former-vpc"
         - Key: "prj"
           Value: "former"
 
   EC2Subnet:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: !Sub "${AWS::Region}c"
-      CidrBlock: "10.0.16.0/20"
-      VpcId: !Ref EC2VPC
+      AvailabilityZone: "ap-northeast-2a"
+      CidrBlock: "10.0.1.0/24"
       MapPublicIpOnLaunch: false
+      VpcId: !Ref EC2VPC
       Tags:
         - Key: "prj"
           Value: "former"
-        - Key: "Name"
-          Value: !Sub "former-subnet-public2-${AWS::Region}c"
 
   EC2Subnet2:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: !Sub "${AWS::Region}a"
-      CidrBlock: "10.0.0.0/20"
-      VpcId: !Ref EC2VPC
+      AvailabilityZone: "ap-northeast-2c"
+      CidrBlock: "10.0.2.0/24"
       MapPublicIpOnLaunch: false
+      VpcId: !Ref EC2VPC
       Tags:
         - Key: "prj"
           Value: "former"
-        - Key: "Name"
-          Value: !Sub "former-subnet-public2-${AWS::Region}a"
+
+  EC2InternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  EC2VPCGatewayAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      VpcId: !Ref EC2VPC
+      InternetGatewayId: !Ref EC2InternetGateway
+
+  EC2RouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  EC2RouteTable2:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  EC2Route:
+    Type: "AWS::EC2::Route"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref EC2InternetGateway
+
+  EC2Route2:
+    Type: "AWS::EC2::Route"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable2
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref EC2InternetGateway
+
+  RDSDBInstance:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      Engine: "mysql"
+      EngineVersion: "5.7"
+      DBInstanceIdentifier: "mydbinstance"
+      AllocatedStorage: 20
+      DBInstanceClass: "db.t2.micro"
+      MasterUsername: "admin"
+      MasterUserPassword: "password123"
+      VPCSecurityGroups:
+        - !Ref EC2SecurityGroup
+      MultiAZ: false
+      StorageEncrypted: true  # Enable RDS storage encryption for data at rest
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+Outputs:
+  EC2Instance1IP:
+    Value: !Ref EC2Instance
+  EC2Instance2IP:
+    Value: !Ref EC2Instance2
+  RDSDBEndpoint:
+    Value: !GetAtt RDSDBInstance.Endpoint.Address

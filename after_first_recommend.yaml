@@ -2,8 +2,7 @@ AWSTemplateFormatVersion: "2010-09-09"
 Metadata:
   Generator: "former2"
 Description: "CFn Template for Former2 Test"
-Parameter:
-
+Parameters:
   AllowedCIDR:
     Description: "cidr to allow ssh access to ec2"
     Type: String
@@ -21,11 +20,11 @@ Resources:
       EbsOptimized: false
       SecurityGroupIds:
         - !Ref EC2SecurityGroup2
-      SourceDestCheck: false  # Disable source/destination checking for increased security
+      SourceDestCheck: false # Disable source/destination checking for increased security
       BlockDeviceMappings:
         - DeviceName: "/dev/xvda"
           Ebs:
-            Encrypted: true  # Enable EBS volume encryption for data at rest
+            Encrypted: true # Enable EBS volume encryption for data at rest
             VolumeSize: 8
             VolumeType: "gp3"
             DeleteOnTermination: true
@@ -51,11 +50,11 @@ Resources:
       EbsOptimized: false
       SecurityGroupIds:
         - !Ref EC2SecurityGroup2
-      SourceDestCheck: false  # Disable source/destination checking for increased security
+      SourceDestCheck: false # Disable source/destination checking for increased security
       BlockDeviceMappings:
         - DeviceName: "/dev/xvda"
           Ebs:
-            Encrypted: true  # Enable EBS volume encryption for data at rest
+            Encrypted: true # Enable EBS volume encryption for data at rest
             VolumeSize: 8
             VolumeType: "gp3"
             DeleteOnTermination: true
@@ -198,7 +197,7 @@ Resources:
       VPCSecurityGroups:
         - !Ref EC2SecurityGroup
       MultiAZ: false
-      StorageEncrypted: true  # Enable RDS storage encryption for data at rest
+      StorageEncrypted: true # Enable RDS storage encryption for data at rest
       Tags:
         - Key: "prj"
           Value: "former"

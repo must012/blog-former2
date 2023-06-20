@@ -122,7 +122,7 @@ Resources:
   EC2Subnet:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: "ap-northeast-2a"
+      AvailabilityZone: "ap-northeast-1a"
       CidrBlock: "10.0.1.0/24"
       MapPublicIpOnLaunch: false
       VpcId: !Ref EC2VPC
@@ -133,7 +133,7 @@ Resources:
   EC2Subnet2:
     Type: "AWS::EC2::Subnet"
     Properties:
-      AvailabilityZone: "ap-northeast-2c"
+      AvailabilityZone: "ap-northeast-1c"
       CidrBlock: "10.0.2.0/24"
       MapPublicIpOnLaunch: false
       VpcId: !Ref EC2VPC

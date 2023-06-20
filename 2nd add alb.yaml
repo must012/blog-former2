@@ -23,7 +23,7 @@ Resources:
           ToPort: 80
           IpProtocol: "tcp"
       SecurityGroupEgress:
-        - CidrIp: "0.0.0.0/0"
+        - CidrIp: !Ref AllowedCIDR
           IpProtocol: "-1"
 
   RDSSecurityGroup:
@@ -37,7 +37,7 @@ Resources:
           ToPort: 3306
           IpProtocol: "tcp"
       SecurityGroupEgress:
-        - CidrIp: "0.0.0.0/0"
+        - CidrIp: !Ref AllowedCIDR
           IpProtocol: "-1"
 
   EC2VPC:
@@ -73,28 +73,7 @@ Resources:
         - Key: "prj"
           Value: "former"
 
-  EC2InternetGateway:
-    Type: "AWS::EC2::InternetGateway"
-    Properties:
-      Tags:
-        - Key: "prj"
-          Value: "former"
-
-  EC2VPCGatewayAttachment:
-    Type: "AWS::EC2::VPCGatewayAttachment"
-    Properties:
-      VpcId: !Ref EC2VPC
-      InternetGatewayId: !Ref EC2InternetGateway
-
   EC2RouteTable:
-    Type: "AWS::EC2::RouteTable"
-    Properties:
-      VpcId: !Ref EC2VPC
-      Tags:
-        - Key: "prj"
-          Value: "former"
-
-  EC2RouteTable2:
     Type: "AWS::EC2::RouteTable"
     Properties:
       VpcId: !Ref EC2VPC
@@ -111,24 +90,89 @@ Resources:
   EC2SubnetRouteTableAssociation2:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
-      RouteTableId: !Ref EC2RouteTable2
+      RouteTableId: !Ref EC2RouteTable
       SubnetId: !Ref EC2Subnet2
 
-  EC2InternetRoute:
-    Type: "AWS::EC2::Route"
-    DependsOn: EC2VPCGatewayAttachment
+  ALBSubnet:
+    Type: "AWS::EC2::Subnet"
     Properties:
-      DestinationCidrBlock: "0.0.0.0/0"
-      GatewayId: !Ref EC2InternetGateway
-      RouteTableId: !Ref EC2RouteTable
+      AvailabilityZone: "ap-northeast-1a"
+      CidrBlock: "10.0.3.0/24"
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
 
-  EC2InternetRoute2:
+  ALBSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      CidrBlock: "10.0.4.0/24"
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  ALBInternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  ALBVPCGatewayAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      VpcId: !Ref EC2VPC
+      InternetGatewayId: !Ref ALBInternetGateway
+
+  ALBRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  ALBSubnetRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref ALBRouteTable
+      SubnetId: !Ref ALBSubnet
+
+  ALBSubnetRouteTableAssociation2:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref ALBRouteTable
+      SubnetId: !Ref ALBSubnet2
+
+  ALBInternetRoute:
     Type: "AWS::EC2::Route"
-    DependsOn: EC2VPCGatewayAttachment
+    DependsOn: ALBVPCGatewayAttachment
     Properties:
       DestinationCidrBlock: "0.0.0.0/0"
-      GatewayId: !Ref EC2InternetGateway
-      RouteTableId: !Ref EC2RouteTable2
+      GatewayId: !Ref ALBInternetGateway
+      RouteTableId: !Ref ALBRouteTable
+
+  NATGatewayEIP:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      Domain: "vpc"
+
+  NATGateway:
+    Type: "AWS::EC2::NatGateway"
+    Properties:
+      AllocationId: !GetAtt NATGatewayEIP.AllocationId
+      SubnetId: !Ref ALBSubnet
+
+  NATGatewayRoute:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref NATGateway
+      RouteTableId: !Ref EC2RouteTable
 
   EC2Instance:
     Type: "AWS::EC2::Instance"
@@ -154,13 +198,35 @@ Resources:
         - Key: "prj"
           Value: "former"
 
+  RDSSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      CidrBlock: "10.0.5.0/24"
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  RDSSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      CidrBlock: "10.0.6.0/24"
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
   RDSDBSubnetGroup:
     Type: "AWS::RDS::DBSubnetGroup"
     Properties:
       DBSubnetGroupDescription: "RDS DB Subnet Group"
       SubnetIds:
-        - !Ref EC2Subnet
-        - !Ref EC2Subnet2
+        - !Ref RDSSubnet
+        - !Ref RDSSubnet2
       Tags:
         - Key: "prj"
           Value: "former"

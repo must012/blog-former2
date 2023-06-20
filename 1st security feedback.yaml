@@ -1,0 +1,192 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+  Generator: "former2"
+Description: "CFn Template for Former2 Test"
+Parameters:
+  AllowedCIDR:
+    Type: String
+    Description: Allowed IP range for SSH and HTTP access
+
+Resources:
+  EC2SecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "EC2 Security Group"
+      VpcId: !Ref EC2VPC
+      SecurityGroupIngress:
+        - CidrIp: !Ref AllowedCIDR
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: "tcp"
+        - CidrIp: !Ref AllowedCIDR
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: "tcp"
+      SecurityGroupEgress:
+        - CidrIp: !Ref AllowedCIDR
+          IpProtocol: "-1"
+
+  RDSSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "RDS Security Group"
+      VpcId: !Ref EC2VPC
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref EC2SecurityGroup
+          FromPort: 3306
+          ToPort: 3306
+          IpProtocol: "tcp"
+      SecurityGroupEgress:
+        - CidrIp: !Ref AllowedCIDR
+          IpProtocol: "-1"
+
+  EC2VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: "default"
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  EC2Subnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-2a"
+      CidrBlock: "10.0.1.0/24"
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  EC2Subnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: "ap-northeast-2c"
+      CidrBlock: "10.0.2.0/24"
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  EC2InternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  EC2VPCGatewayAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      VpcId: !Ref EC2VPC
+      InternetGatewayId: !Ref EC2InternetGateway
+
+  EC2RouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  EC2RouteTable2:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  EC2SubnetRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable
+      SubnetId: !Ref EC2Subnet
+
+  EC2SubnetRouteTableAssociation2:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable2
+      SubnetId: !Ref EC2Subnet2
+
+  EC2InternetRoute:
+    Type: "AWS::EC2::Route"
+    DependsOn: EC2VPCGatewayAttachment
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref EC2InternetGateway
+      RouteTableId: !Ref EC2RouteTable
+
+  EC2InternetRoute2:
+    Type: "AWS::EC2::Route"
+    DependsOn: EC2VPCGatewayAttachment
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref EC2InternetGateway
+      RouteTableId: !Ref EC2RouteTable2
+
+  EC2Instance:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      InstanceType: "t2.micro"
+      SubnetId: !Ref EC2Subnet
+      ImageId: "ami-0123456789abcdef0"  # Replace with desired AMI ID
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  EC2Instance2:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      InstanceType: "t2.micro"
+      SubnetId: !Ref EC2Subnet2
+      ImageId: "ami-0123456789abcdef0"  # Replace with desired AMI ID
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  RDSDBSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "RDS DB Subnet Group"
+      SubnetIds:
+        - !Ref EC2Subnet
+        - !Ref EC2Subnet2
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+  RDSDBInstance:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      AllocatedStorage: 20
+      BackupRetentionPeriod: 7
+      DBInstanceClass: "db.t2.micro"
+      DBInstanceIdentifier: "mydbinstance"
+      Engine: "MySQL"
+      EngineVersion: "5.7"
+      MasterUsername: "admin"
+      MasterUserPassword: "password123"
+      DBSubnetGroupName: !Ref RDSDBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroup
+      Tags:
+        - Key: "prj"
+          Value: "former"
+
+Outputs:
+  EC2Instance1IP:
+    Value: !Ref EC2Instance
+  EC2Instance2IP:
+    Value: !Ref EC2Instance2
+  RDSDBEndpoint:
+    Value: !GetAtt RDSDBInstance.Endpoint.Address
